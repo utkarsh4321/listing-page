@@ -21,11 +21,13 @@
       .table td {
         vertical-align: middle;
       }
+
       .fa-sort {
         cursor: pointer;
       }
     </style>
   </head>
+
   <body>
     <!-- HTML -->
     <div class="main__wrapper">
@@ -133,35 +135,72 @@
 
     <!-- JQUERY PART -->
     <script>
-      $(function () {
-        let movieData;
-        $.getJSON("./data.json", (data) => {
-          movieData = data;
-          $.each(data.movies, (index, { id, movieTitle, movieRating }) => {
-            $(`
-            <tr data-id=${id} class="movierow">
-                    <td>${movieTitle}</td>
-                    <td>${movieRating}</td>
-                    <td>
-                      <button class="btn btn-danger">
-                        <i class="far fa-trash-alt"></i>
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-
-            `).appendTo(".table tbody");
-          });
+      // GET Movies
+      let movieData;
+      function getMoviesList() {
+        $.ajax({
+          url: "http://localhost:8080/movies",
+          type: "GET",
+          success: function (result) {
+            movieData = result;
+          },
         });
+      }
+      getMoviesList();
+
+      function renderList(movies) {
+        $.each(movies, (index, { id, movieTitle, movieRating }) => {
+          $(`
+          <tr data-id=${id} class="movierow">
+                  <td>${movieTitle}</td>
+                  <td>${movieRating}</td>
+                  <td>
+                    <button class="btn btn-danger">
+                      <i class="far fa-trash-alt"></i>
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+
+          `).appendTo(".table tbody");
+        });
+      }
+
+      $(function () {
+        renderList(movieData);
+        // $.getJSON("./data.json", (data) => {
+        //   movieData = data;
+        //   $.each(data.movies, (index, { id, movieTitle, movieRating }) => {
+        //     $(`
+        //     <tr data-id=${id} class="movierow">
+        //             <td>${movieTitle}</td>
+        //             <td>${movieRating}</td>
+        //             <td>
+        //               <button class="btn btn-danger">
+        //                 <i class="far fa-trash-alt"></i>
+        //                 Delete
+        //               </button>
+        //             </td>
+        //           </tr>
+
+        //     `).appendTo(".table tbody");
+        //   });
+        // });
 
         // REMOVE MOVIE
         $(".table tbody").on("click", ".btn", (e) => {
           const targetMovie = $(e.target).parents("tr");
           let targetId = $(e.target).parents("tr").data("id");
-          movieData["movies"] = movieData["movies"].filter(
-            (item) => item.id !== targetId
-          );
-          targetMovie.remove();
+          console.log(targetId);
+          $.ajax(`http://localhost:8080/movies/${targetId}`, {
+            type: "DELETE",
+            success: function (res) {
+              console.log(res);
+
+              movieData = movieData.filter((item) => item.id !== targetId);
+              targetMovie.remove();
+            },
+          });
         });
 
         function sortner(sortedData) {
@@ -189,7 +228,7 @@
           const valueOnTheBasisOfSorting = $(e.target).siblings().text();
           let sortedData;
           if (valueOnTheBasisOfSorting === "Title") {
-            sortedData = [...movieData["movies"]].sort((a, b) => {
+            sortedData = [...movieData].sort((a, b) => {
               let itemA = a.movieTitle.toUpperCase();
               let itemB = b.movieTitle.toUpperCase();
               let compareValue = 0;
@@ -205,7 +244,7 @@
             sortner(sortedData);
           }
           if (valueOnTheBasisOfSorting === "Rating") {
-            sortedData = [...movieData["movies"]].sort((a, b) => {
+            sortedData = [...movieData].sort((a, b) => {
               let itemA = +a.movieRating;
               let itemB = +b.movieRating;
               let compareValue = 0;
@@ -237,27 +276,31 @@
         }
         $("#movie-form").on("submit", function (e) {
           e.preventDefault();
+          e.stopPropagation();
           let movieTitle = $('input[name="movie"]');
           let movieRating = $('input[name="rating"]');
           if (checkInputValue(movieTitle.val(), movieRating.val())) {
             let id;
-            if (movieData["movies"].length > 0) {
-              id = movieData["movies"][movieData["movies"].length - 1]["id"];
+            if (movieData.length > 0) {
+              id = movieData[movieData.length - 1]["id"];
               id++;
             } else {
               id = 1;
             }
+            $.ajax("http://localhost:8080/movies", {
+              type: "POST",
+              data: {
+                id,
+                movieRating: movieRating.val(),
+                movieTitle: movieTitle.val(),
+              },
+              success: function (res) {
+                movieData.push(res);
 
-            movieData["movies"].push({
-              id,
-              movieRating: movieRating.val(),
-              movieTitle: movieTitle.val(),
-            });
-
-            $(`
-            <tr data-id=${id} class="movierow">
-                    <td>${movieTitle.val()}</td>
-                    <td>${movieRating.val()}</td>
+                $(`
+            <tr data-id=${res.id} class="movierow">
+                    <td>${res.movieTitle}</td>
+                    <td>${res.movieRating}</td>
                     <td>
                       <button class="btn btn-danger">
                         <i class="far fa-trash-alt"></i>
@@ -267,8 +310,10 @@
                   </tr>
 
             `).appendTo(".table tbody");
-            movieTitle.val("");
-            movieRating.val("");
+                movieTitle.val("");
+                movieRating.val("");
+              },
+            });
           }
         });
       });

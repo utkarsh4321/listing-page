@@ -1,24 +1,14 @@
 {
   "movies": [
     {
-      "id": 1,
-      "movieTitle": "Thor",
-      "movieRating": 5
-    },
-    {
-      "id": 2,
-      "movieTitle": "Now i can show you",
-      "movieRating": 8
-    },
-    {
       "id": 3,
       "movieTitle": "Fast & Furious",
       "movieRating": 10
     },
     {
-      "id": 4,
-      "movieTitle": "Avenger",
-      "movieRating": 10
+      "id": "5",
+      "movieRating": "8",
+      "movieTitle": "Avenger"
     }
   ]
 }
